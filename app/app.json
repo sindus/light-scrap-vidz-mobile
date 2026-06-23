@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "light-scrap-vidZ",
+    "slug": "light-scrap-vidz-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "lightscrapvidz",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0f0f1a",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "fr.ouestcast.lightscrapvidz",
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "Save downloaded videos to your photo library.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "package": "fr.ouestcast.lightscrapvidz",
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-media-library",
+      [
+        "expo-notifications",
+        {
+          "color": "#a78bfa"
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
+    "extra": {
+      "defaultServerUrl": ""
+    }
+  }
+}
