@@ -7,8 +7,10 @@
     "scheme": "lightscrapvidz",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "splash": {
-      "backgroundColor": "#0f0f1a",
+      "image": "./assets/icon.png",
+      "backgroundColor": "#141310",
       "resizeMode": "contain"
     },
     "assetBundlePatterns": [
@@ -39,7 +41,7 @@
       [
         "expo-notifications",
         {
-          "color": "#a78bfa"
+          "color": "#C9F25E"
         }
       ],
       "expo-asset",

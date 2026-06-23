@@ -11,6 +11,7 @@ interface BadgeProps {
 export function Badge({ label, color, bgColor, borderColor }: BadgeProps) {
   return (
     <View style={[styles.badge, { backgroundColor: bgColor, borderColor }]}>
+      <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.text, { color }]}>{label}</Text>
     </View>
   );
@@ -19,13 +20,21 @@ export function Badge({ label, color, bgColor, borderColor }: BadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     borderWidth: 1,
     borderRadius: radius.full,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
   },
   text: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

@@ -7,7 +7,6 @@ interface PlaylistEndSelectorProps {
   disabled?: boolean;
 }
 
-// 0 = all items. Others = latest N.
 const OPTIONS: Array<{ n: number; label: string }> = [
   { n: 5, label: '5' },
   { n: 10, label: '10' },
@@ -18,20 +17,20 @@ const OPTIONS: Array<{ n: number; label: string }> = [
 
 export function PlaylistEndSelector({ value, onChange, disabled }: PlaylistEndSelectorProps) {
   return (
-    <View>
-      <Text style={styles.label}>How many (latest first)</Text>
-      <View style={[styles.row, disabled && styles.disabled]}>
+    <View style={styles.row}>
+      <Text style={styles.label}>Count</Text>
+      <View style={[styles.chips, disabled && styles.disabled]}>
         {OPTIONS.map(({ n, label }) => {
           const active = n === value;
           return (
             <TouchableOpacity
               key={n}
-              style={[styles.pill, active && styles.pillActive]}
+              style={[styles.chip, active && styles.chipActive]}
               onPress={() => !disabled && onChange(n)}
               disabled={disabled}
               activeOpacity={0.8}
             >
-              <Text style={[styles.pillText, active && styles.pillTextActive]}>{label}</Text>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -41,22 +40,43 @@ export function PlaylistEndSelector({ value, onChange, disabled }: PlaylistEndSe
 }
 
 const styles = StyleSheet.create({
-  label: { color: colors.textSecondary, fontSize: 12, fontWeight: '500', marginBottom: 8 },
-  row: { flexDirection: 'row', gap: 6 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  label: {
+    color: colors.textBody,
+    fontSize: 13,
+    fontWeight: '600',
+    flexShrink: 0,
+  },
   disabled: { opacity: 0.5 },
-  pill: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+  chips: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.xs,
+    backgroundColor: colors.surfaceButton,
     borderWidth: 1,
-    borderColor: colors.surfaceBorder,
+    borderColor: colors.surfaceButtonBorder,
+    minWidth: 36,
     alignItems: 'center',
   },
-  pillActive: {
-    backgroundColor: 'rgba(167,139,250,0.18)',
-    borderColor: 'rgba(167,139,250,0.5)',
+  chipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
-  pillText: { color: colors.textSecondary, fontSize: 13, fontWeight: '500' },
-  pillTextActive: { color: colors.accent },
+  chipText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#B6B0A6',
+  },
+  chipTextActive: {
+    color: colors.accentInk,
+  },
 });

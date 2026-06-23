@@ -7,6 +7,8 @@ interface DownloadButtonProps {
   status: DownloadStatus;
   disabled?: boolean;
   audioOnly: boolean;
+  isPlaylist?: boolean;
+  playlistCount?: number | null;
   onDownload: () => void;
   onCancel: () => void;
   onReset: () => void;
@@ -16,6 +18,8 @@ export function DownloadButton({
   status,
   disabled,
   audioOnly,
+  isPlaylist,
+  playlistCount,
   onDownload,
   onCancel,
   onReset,
@@ -49,6 +53,13 @@ export function DownloadButton({
     );
   }
 
+  let label: string;
+  if (isPlaylist && playlistCount) {
+    label = audioOnly ? `Extract ${playlistCount} MP3s` : `Download ${playlistCount} videos`;
+  } else {
+    label = audioOnly ? 'Extract MP3' : 'Download MP4';
+  }
+
   return (
     <TouchableOpacity
       style={[styles.button, styles.primary, disabled && styles.disabled]}
@@ -56,10 +67,8 @@ export function DownloadButton({
       disabled={disabled}
       activeOpacity={0.85}
     >
-      <Feather name={audioOnly ? 'music' : 'download'} size={18} color="#fff" />
-      <Text style={[styles.label, { color: '#fff' }]}>
-        {audioOnly ? 'Download MP3' : 'Download MP4'}
-      </Text>
+      <Feather name="download" size={18} color={colors.accentInk} />
+      <Text style={[styles.label, { color: colors.accentInk }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -70,20 +79,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 15,
-    borderRadius: radius.md,
+    height: 52,
+    borderRadius: radius.lg,
   },
-  primary: { backgroundColor: colors.accentDim },
+  primary: {
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 5,
+  },
   cancel: {
-    backgroundColor: 'rgba(248,113,113,0.12)',
+    backgroundColor: colors.errorBg,
     borderWidth: 1,
-    borderColor: 'rgba(248,113,113,0.3)',
+    borderColor: colors.errorBorder,
   },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceButton,
     borderWidth: 1,
-    borderColor: colors.surfaceBorder,
+    borderColor: colors.surfaceButtonBorder,
   },
   disabled: { opacity: 0.4 },
-  label: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  label: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
 });

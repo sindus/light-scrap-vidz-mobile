@@ -1,8 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Badge } from './Badge';
 import { PLATFORM_META } from '@/lib/platform';
-import { colors } from '@/theme';
+import { colors, radius } from '@/theme';
 import type { HistoryEntry } from '@/types';
 
 interface HistoryListProps {
@@ -11,7 +11,7 @@ interface HistoryListProps {
 }
 
 function timeAgo(ts: number): string {
-  const diff = Math.max(0, new Date().getTime() - ts);
+  const diff = Math.max(0, Date.now() - ts);
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
@@ -24,7 +24,7 @@ export function HistoryList({ entries, onClear }: HistoryListProps) {
   if (entries.length === 0) {
     return (
       <View style={styles.empty}>
-        <Feather name="clock" size={24} color={colors.textMuted} />
+        <Feather name="clock" size={24} color={colors.textFaint} />
         <Text style={styles.emptyText}>No downloads yet</Text>
       </View>
     );
@@ -35,18 +35,29 @@ export function HistoryList({ entries, onClear }: HistoryListProps) {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Recent</Text>
         <TouchableOpacity onPress={onClear} hitSlop={8}>
-          <Text style={styles.clear}>Clear</Text>
+          <Text style={styles.clearText}>Clear all</Text>
         </TouchableOpacity>
       </View>
       {entries.map((e) => {
         const meta = PLATFORM_META[e.platform];
         return (
           <View key={e.id} style={styles.item}>
-            <Badge {...meta} />
-            <Text style={styles.title} numberOfLines={2}>
-              {e.title}
-            </Text>
-            <Text style={styles.time}>{timeAgo(e.downloaded_at)}</Text>
+            <View style={styles.thumb}>
+              {e.thumbnail ? (
+                <Image source={{ uri: e.thumbnail }} style={styles.thumbImg} resizeMode="cover" />
+              ) : (
+                <View style={styles.thumbPlaceholder} />
+              )}
+            </View>
+            <View style={styles.body}>
+              <Text style={styles.title} numberOfLines={1}>
+                {e.title}
+              </Text>
+              <View style={styles.metaRow}>
+                <Badge {...meta} />
+                <Text style={styles.time}>{timeAgo(e.downloaded_at)}</Text>
+              </View>
+            </View>
           </View>
         );
       })}
@@ -55,18 +66,75 @@ export function HistoryList({ entries, onClear }: HistoryListProps) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 10 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
-  clear: { color: colors.textMuted, fontSize: 12 },
-  item: {
-    gap: 4,
-    paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.surfaceBorder,
+  wrap: { gap: 8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  title: { color: colors.textPrimary, fontSize: 13, lineHeight: 18 },
-  time: { color: colors.textMuted, fontSize: 11 },
-  empty: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  emptyText: { color: colors.textMuted, fontSize: 13 },
+  headerTitle: {
+    color: colors.textBody,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  clearText: {
+    color: colors.textFaint,
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  thumb: {
+    width: 60,
+    height: 38,
+    borderRadius: radius.xs,
+    overflow: 'hidden',
+    backgroundColor: '#211F1A',
+    flexShrink: 0,
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbPlaceholder: {
+    flex: 1,
+    backgroundColor: '#1A1815',
+  },
+  body: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+  title: {
+    color: colors.textTitle,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  time: {
+    color: colors.textVeryFaint,
+    fontSize: 11,
+  },
+  empty: {
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 28,
+  },
+  emptyText: {
+    color: colors.textFaint,
+    fontSize: 13,
+  },
 });

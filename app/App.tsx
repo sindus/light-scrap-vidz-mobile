@@ -18,7 +18,6 @@ import { UrlInput } from '@/components/UrlInput';
 import { VideoPreview } from '@/components/VideoPreview';
 import { PlaylistPreview } from '@/components/PlaylistPreview';
 import { FormatSelector } from '@/components/FormatSelector';
-import { AudioToggle } from '@/components/AudioToggle';
 import { PlaylistEndSelector } from '@/components/PlaylistEndSelector';
 import { ProgressCard } from '@/components/ProgressCard';
 import { DownloadButton } from '@/components/DownloadButton';
@@ -42,7 +41,7 @@ function AppInner() {
   const [urlKind, setUrlKind] = useState<UrlKind>('single');
   const [playlistEnd, setPlaylistEnd] = useState(10);
   const [audioOnly, setAudioOnly] = useState(false);
-  const [tab, setTab] = useState<'history' | 'queue'>('history');
+  const [tab, setTab] = useState<'recent' | 'queue'>('recent');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [serverUrl, setServerUrlState] = useState<string | null>(null);
 
@@ -150,7 +149,12 @@ function AppInner() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={colors.bgGradient} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={colors.bgGradient}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
       <StatusBar style="light" />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
@@ -159,15 +163,17 @@ function AppInner() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.logo}>
-              <Text style={styles.logoEmoji}>⬇️</Text>
+            <View style={styles.logoWrap}>
+              <Feather name="download" size={12} color={colors.accentInk} />
             </View>
-            <View style={styles.flex}>
-              <Text style={styles.appTitle}>light-scrap-vidZ</Text>
-              <Text style={styles.appSub}>Download any video as MP4</Text>
-            </View>
-            <TouchableOpacity onPress={() => setSettingsOpen(true)} hitSlop={10}>
-              <Feather name="settings" size={20} color={colors.textSecondary} />
+            <Text style={styles.appTitle}>light-scrap-vidZ</Text>
+            <TouchableOpacity
+              style={styles.settingsBtn}
+              onPress={() => setSettingsOpen(true)}
+              hitSlop={10}
+              activeOpacity={0.7}
+            >
+              <Feather name="sliders" size={17} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -176,47 +182,47 @@ function AppInner() {
             contentContainerStyle={styles.scroll}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Server banner */}
             {needsServer && (
-              <TouchableOpacity onPress={() => setSettingsOpen(true)} activeOpacity={0.85}>
+              <TouchableOpacity
+                onPress={() => setSettingsOpen(true)}
+                activeOpacity={0.85}
+              >
                 <View style={styles.banner}>
-                  <Feather name="alert-triangle" size={16} color={colors.accent} />
+                  <Feather name="alert-triangle" size={15} color={colors.accent} />
                   <Text style={styles.bannerText}>
-                    No server set. Tap to enter your server address.
+                    No server configured. Tap to enter your server address.
                   </Text>
                 </View>
               </TouchableOpacity>
             )}
 
+            {/* URL input */}
             <GlassCard>
               <UrlInput
                 onSubmit={handleFetchInfo}
                 isLoading={activeInfoStatus === 'loading'}
                 disabled={isBusy}
               />
-              {activeInfoStatus === 'error' && <Text style={styles.error}>{activeError}</Text>}
+              {activeInfoStatus === 'error' && (
+                <Text style={styles.error}>{activeError}</Text>
+              )}
             </GlassCard>
 
+            {/* Content (preview + options + download) */}
             {showContent && (
               <View style={styles.section}>
                 {urlKind === 'single' && info && <VideoPreview info={info} url={url} />}
                 {urlKind === 'playlist' && plInfo && <PlaylistPreview info={plInfo} url={url} />}
 
-                <GlassCard style={styles.options}>
-                  <AudioToggle
-                    value={audioOnly}
-                    onChange={setAudioOnly}
+                <GlassCard style={styles.optionsCard}>
+                  <FormatSelector
+                    audioOnly={audioOnly}
+                    onAudioOnlyChange={setAudioOnly}
+                    quality={quality}
+                    onQualityChange={setQuality}
                     disabled={isBusy || isActive}
                   />
-                  {!audioOnly && (
-                    <>
-                      <View style={styles.sep} />
-                      <FormatSelector
-                        value={quality}
-                        onChange={setQuality}
-                        disabled={isBusy || isActive}
-                      />
-                    </>
-                  )}
                   {urlKind === 'playlist' && (
                     <>
                       <View style={styles.sep} />
@@ -235,6 +241,8 @@ function AppInner() {
                   status={status}
                   disabled={needsServer || isBusy}
                   audioOnly={audioOnly}
+                  isPlaylist={urlKind === 'playlist'}
+                  playlistCount={plInfo?.playlist_count}
                   onDownload={handleDownload}
                   onCancel={cancel}
                   onReset={handleReset}
@@ -243,27 +251,47 @@ function AppInner() {
             )}
 
             {/* Tabs */}
-            <View style={styles.tabs}>
-              <TouchableOpacity
-                style={[styles.tab, tab === 'history' && styles.tabActive]}
-                onPress={() => setTab('history')}
-              >
-                <Text style={[styles.tabText, tab === 'history' && styles.tabTextActive]}>
-                  Recent
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, tab === 'queue' && styles.tabActive]}
-                onPress={() => setTab('queue')}
-              >
-                <Text style={[styles.tabText, tab === 'queue' && styles.tabTextActive]}>
-                  Queue{pendingCount > 0 ? ` (${pendingCount})` : ''}
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.tabBar}>
+              <View style={styles.tabGroup}>
+                <TouchableOpacity
+                  style={[styles.tabBtn, tab === 'recent' && styles.tabBtnActive]}
+                  onPress={() => setTab('recent')}
+                  activeOpacity={0.8}
+                >
+                  <Feather
+                    name="clock"
+                    size={13}
+                    color={tab === 'recent' ? colors.textPrimary : colors.textMuted}
+                  />
+                  <Text style={[styles.tabText, tab === 'recent' && styles.tabTextActive]}>
+                    Recent
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tabBtn, tab === 'queue' && styles.tabBtnActive]}
+                  onPress={() => setTab('queue')}
+                  activeOpacity={0.8}
+                >
+                  <Feather
+                    name="layers"
+                    size={13}
+                    color={tab === 'queue' ? colors.textPrimary : colors.textMuted}
+                  />
+                  <Text style={[styles.tabText, tab === 'queue' && styles.tabTextActive]}>
+                    Queue
+                  </Text>
+                  {pendingCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{pendingCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
+            {/* Tab content */}
             <GlassCard>
-              {tab === 'history' ? (
+              {tab === 'recent' ? (
                 <HistoryList entries={entries} onClear={clearHistory} />
               ) : (
                 <QueuePanel
@@ -300,57 +328,116 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   safe: { flex: 1 },
   flex: { flex: 1 },
+
+  /* Header */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 9,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  logo: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(167,139,250,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.3)',
+  logoWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoEmoji: { fontSize: 16 },
-  appTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
-  appSub: { color: colors.textMuted, fontSize: 11, marginTop: 1 },
-  scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, gap: spacing.md },
+  appTitle: {
+    flex: 1,
+    color: '#EFEBE4',
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.15,
+  },
+  settingsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: '#1C1B17',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Scroll */
+  scroll: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+
+  /* Banner */
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(167,139,250,0.1)',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.25)',
+    borderColor: 'rgba(201,242,94,0.25)',
     borderRadius: radius.md,
     padding: spacing.md,
   },
   bannerText: { color: colors.accent, fontSize: 13, flex: 1 },
-  error: { color: colors.error, fontSize: 12, marginTop: 10 },
+
+  /* Error */
+  error: { color: '#FF8A8A', fontSize: 12, marginTop: 10 },
+
+  /* Section */
   section: { gap: spacing.md },
-  options: { gap: spacing.md },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.surfaceBorder },
-  tabs: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+  optionsCard: { gap: 14 },
+  sep: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.06)' },
+
+  /* Tab bar */
+  tabBar: { flexDirection: 'row', alignItems: 'center' },
+  tabGroup: {
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 11,
+    padding: 4,
   },
-  tabActive: {
-    backgroundColor: 'rgba(167,139,250,0.12)',
-    borderColor: 'rgba(167,139,250,0.3)',
+  tabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
   },
-  tabText: { color: colors.textSecondary, fontSize: 13, fontWeight: '500' },
-  tabTextActive: { color: colors.accent },
+  tabBtnActive: {
+    backgroundColor: '#2A2823',
+  },
+  tabText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  tabTextActive: {
+    color: '#F0ECE4',
+  },
+
+  /* Queue badge */
+  badge: {
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: colors.accentInk,
+    fontSize: 10,
+    fontWeight: '800',
+  },
 });

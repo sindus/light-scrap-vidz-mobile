@@ -1,11 +1,10 @@
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { GlassCard } from './GlassCard';
 import { Badge } from './Badge';
 import { PLATFORM_META } from '@/lib/platform';
 import { formatDuration } from '@/lib/utils';
 import { getPlatform } from '@/lib/url-validator';
-import { colors } from '@/theme';
+import { colors, radius } from '@/theme';
 import type { VideoInfo } from '@/types';
 
 interface VideoPreviewProps {
@@ -22,7 +21,7 @@ export function VideoPreview({ info, url }: VideoPreviewProps) {
         {info.thumbnail ? (
           <Image source={{ uri: info.thumbnail }} style={styles.thumbImg} resizeMode="cover" />
         ) : (
-          <Text style={styles.thumbFallback}>🎬</Text>
+          <View style={styles.thumbPlaceholder} />
         )}
         {info.duration > 0 && (
           <View style={styles.durationTag}>
@@ -32,20 +31,18 @@ export function VideoPreview({ info, url }: VideoPreviewProps) {
       </View>
 
       <View style={styles.body}>
-        <Badge {...meta} />
+        <View style={styles.topRow}>
+          <Badge {...meta} />
+          <Text style={styles.kindLabel}>SINGLE VIDEO</Text>
+        </View>
         <Text style={styles.title} numberOfLines={2}>
           {info.title}
         </Text>
-        <View style={styles.metaRow}>
-          {!!info.uploader && (
-            <View style={styles.metaItem}>
-              <Feather name="user" size={12} color={colors.textSecondary} />
-              <Text style={styles.metaText} numberOfLines={1}>
-                {info.uploader}
-              </Text>
-            </View>
-          )}
-        </View>
+        <Text style={styles.meta} numberOfLines={1}>
+          {[info.uploader, info.duration > 0 ? formatDuration(info.duration) : null]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
       </View>
     </GlassCard>
   );
@@ -54,62 +51,64 @@ export function VideoPreview({ info, url }: VideoPreviewProps) {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 12,
+    alignItems: 'flex-start',
   },
   thumb: {
-    width: 120,
-    height: 76,
-    borderRadius: 12,
+    width: 100,
+    height: 64,
+    borderRadius: radius.sm,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#211F1A',
+    flexShrink: 0,
   },
   thumbImg: {
     width: '100%',
     height: '100%',
   },
-  thumbFallback: {
-    fontSize: 24,
+  thumbPlaceholder: {
+    flex: 1,
+    backgroundColor: '#1A1815',
   },
   durationTag: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    borderRadius: 4,
+    paddingHorizontal: 5,
     paddingVertical: 2,
   },
   durationText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '500',
   },
   body: {
     flex: 1,
-    gap: 6,
-    justifyContent: 'center',
+    gap: 5,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  kindLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   title: {
     color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19,
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 18,
   },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexShrink: 1,
-  },
-  metaText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    flexShrink: 1,
+  meta: {
+    color: colors.textMuted,
+    fontSize: 11.5,
   },
 });

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors, radius } from '@/theme';
-import { isValidUrl } from '@/lib/url-validator';
+
 import type { QueueItem } from '@/types';
 
 interface QueuePanelProps {
@@ -13,19 +13,27 @@ interface QueuePanelProps {
   onClearAll: () => void;
 }
 
-const STATUS_ICON: Record<QueueItem['status'], keyof typeof Feather.glyphMap> = {
-  pending: 'clock',
-  downloading: 'download',
-  done: 'check-circle',
-  error: 'alert-circle',
-};
-
-const STATUS_COLOR: Record<QueueItem['status'], string> = {
-  pending: colors.textMuted,
-  downloading: colors.accent,
-  done: colors.success,
-  error: colors.error,
-};
+function StatusIcon({ status }: { status: QueueItem['status'] }) {
+  if (status === 'done')
+    return (
+      <View style={[styles.iconBox, styles.iconDone]}>
+        <Feather name="check" size={11} color="#3FCF8E" />
+      </View>
+    );
+  if (status === 'error')
+    return (
+      <View style={[styles.iconBox, styles.iconError]}>
+        <Text style={styles.iconErrorText}>!</Text>
+      </View>
+    );
+  if (status === 'downloading')
+    return (
+      <View style={[styles.iconBox, styles.iconSpinner]}>
+        <Feather name="loader" size={11} color={colors.accent} />
+      </View>
+    );
+  return <View style={[styles.iconBox, styles.iconPending]} />;
+}
 
 export function QueuePanel({
   items,
@@ -35,12 +43,13 @@ export function QueuePanel({
   onClearAll,
 }: QueuePanelProps) {
   const [text, setText] = useState('');
+  const [focused, setFocused] = useState(false);
 
   const add = () => {
     const urls = text
       .split('\n')
       .map((l) => l.trim())
-      .filter((l) => isValidUrl(l));
+      .filter((l) => l.startsWith('http'));
     if (urls.length === 0) return;
     onAddUrls(urls);
     setText('');
@@ -49,17 +58,27 @@ export function QueuePanel({
   return (
     <View style={styles.wrap}>
       <TextInput
-        style={styles.input}
+        style={[styles.input, focused && styles.inputFocused]}
         value={text}
         onChangeText={setText}
-        placeholder={'Paste URLs, one per line'}
-        placeholderTextColor={colors.textMuted}
+        placeholder="Paste one or more links, one per line…"
+        placeholderTextColor={colors.textFaint}
         autoCapitalize="none"
         autoCorrect={false}
         multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
-      <TouchableOpacity style={styles.addBtn} onPress={add} activeOpacity={0.85}>
-        <Feather name="plus" size={16} color={colors.accent} />
+
+      <TouchableOpacity
+        style={[styles.addBtn, !text.trim() && styles.addBtnDisabled]}
+        onPress={add}
+        disabled={!text.trim()}
+        activeOpacity={0.85}
+      >
+        <Feather name="plus" size={16} color={colors.textBody} />
         <Text style={styles.addText}>Add to queue</Text>
       </TouchableOpacity>
 
@@ -76,23 +95,25 @@ export function QueuePanel({
 
       {items.map((item) => (
         <View key={item.id} style={styles.item}>
-          <Feather name={STATUS_ICON[item.status]} size={15} color={STATUS_COLOR[item.status]} />
+          <StatusIcon status={item.status} />
           <View style={styles.itemBody}>
             <Text style={styles.itemUrl} numberOfLines={1}>
               {item.url}
             </Text>
             {item.status === 'downloading' && item.progress != null && (
-              <Text style={styles.itemMeta}>{item.progress.toFixed(0)}%</Text>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
+              </View>
             )}
             {item.status === 'error' && !!item.error && (
-              <Text style={[styles.itemMeta, { color: colors.error }]} numberOfLines={1}>
+              <Text style={styles.itemError} numberOfLines={1}>
                 {item.error}
               </Text>
             )}
           </View>
-          {(item.status === 'pending' || item.status === 'done' || item.status === 'error') && (
+          {item.status === 'pending' && (
             <TouchableOpacity onPress={() => onRemoveItem(item.id)} hitSlop={8}>
-              <Feather name="x" size={14} color={colors.textMuted} />
+              <Feather name="x" size={13} color={colors.textVeryFaint} />
             </TouchableOpacity>
           )}
         </View>
@@ -100,7 +121,7 @@ export function QueuePanel({
 
       {items.length === 0 && (
         <View style={styles.empty}>
-          <Feather name="layers" size={24} color={colors.textMuted} />
+          <Feather name="layers" size={24} color={colors.textFaint} />
           <Text style={styles.emptyText}>Queue is empty</Text>
         </View>
       )}
@@ -111,42 +132,85 @@ export function QueuePanel({
 const styles = StyleSheet.create({
   wrap: { gap: 10 },
   input: {
-    minHeight: 64,
-    color: colors.textPrimary,
-    fontSize: 13,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderColor: colors.surfaceBorder,
+    minHeight: 72,
+    color: colors.textBody,
+    fontSize: 12.5,
+    backgroundColor: colors.surface,
+    borderColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    textAlignVertical: 'top',
+  },
+  inputFocused: {
+    borderColor: colors.accent,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
+    gap: 7,
+    height: 40,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(167,139,250,0.12)',
+    backgroundColor: colors.surfaceButton,
     borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.25)',
+    borderColor: colors.surfaceButtonBorder,
   },
-  addText: { color: colors.accent, fontSize: 13, fontWeight: '600' },
+  addBtnDisabled: { opacity: 0.4 },
+  addText: { color: colors.textBody, fontSize: 13, fontWeight: '600' },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16 },
-  actionText: { color: colors.textMuted, fontSize: 12 },
+  actionText: { color: colors.textFaint, fontSize: 11.5, fontWeight: '600' },
   item: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.surfaceBorder,
+    padding: 11,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  itemBody: { flex: 1 },
-  itemUrl: { color: colors.textSecondary, fontSize: 12 },
-  itemMeta: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  empty: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  emptyText: { color: colors.textMuted, fontSize: 13 },
+  iconBox: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  iconPending: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  iconDone: {
+    backgroundColor: 'rgba(63,207,142,0.16)',
+  },
+  iconError: {
+    backgroundColor: 'rgba(255,90,90,0.16)',
+  },
+  iconSpinner: {
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+  },
+  iconErrorText: {
+    color: '#FF8A8A',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  itemBody: { flex: 1, minWidth: 0, gap: 4 },
+  itemUrl: { color: '#A39D93', fontSize: 11.5 },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.accent,
+  },
+  itemError: { color: '#FF8A8A', fontSize: 11 },
+  empty: { alignItems: 'center', gap: 8, paddingVertical: 20 },
+  emptyText: { color: colors.textFaint, fontSize: 13 },
 });

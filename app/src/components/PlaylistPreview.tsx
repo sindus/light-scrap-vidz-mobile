@@ -1,10 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { GlassCard } from './GlassCard';
 import { Badge } from './Badge';
 import { PLATFORM_META } from '@/lib/platform';
 import { getPlatform } from '@/lib/url-validator';
-import { colors } from '@/theme';
+import { colors, radius } from '@/theme';
 import type { PlaylistInfo } from '@/types';
 
 interface PlaylistPreviewProps {
@@ -14,45 +13,76 @@ interface PlaylistPreviewProps {
 
 export function PlaylistPreview({ info, url }: PlaylistPreviewProps) {
   const meta = PLATFORM_META[getPlatform(url)];
-  const count = info.playlist_count;
+  const count = info.playlist_count ?? info.entries?.length ?? null;
 
   return (
     <GlassCard style={styles.card}>
-      <View style={styles.iconBox}>
-        <Feather name="list" size={22} color={colors.accent} />
+      <View style={styles.thumb}>
+        <View style={styles.thumbPlaceholder} />
       </View>
+
       <View style={styles.body}>
-        <Badge {...meta} />
-        <Text style={styles.title} numberOfLines={2}>
-          {info.title || 'Profile / Playlist'}
-        </Text>
-        <View style={styles.metaRow}>
-          {!!info.uploader && (
-            <Text style={styles.metaText} numberOfLines={1}>
-              {info.uploader}
-            </Text>
-          )}
-          {count != null && <Text style={styles.metaText}>{count} videos</Text>}
+        <View style={styles.topRow}>
+          <Badge {...meta} />
+          <Text style={styles.kindLabel}>PLAYLIST</Text>
         </View>
+        <Text style={styles.title} numberOfLines={2}>
+          {info.title || 'Untitled Playlist'}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {[info.uploader, count != null ? `${count} videos` : null].filter(Boolean).join(' · ')}
+        </Text>
       </View>
     </GlassCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  iconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: 'rgba(167,139,250,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.25)',
+  card: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  thumb: {
+    width: 100,
+    height: 64,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    backgroundColor: '#211F1A',
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  body: { flex: 1, gap: 6, justifyContent: 'center' },
-  title: { color: colors.textPrimary, fontSize: 14, fontWeight: '500', lineHeight: 19 },
-  metaRow: { flexDirection: 'row', gap: 12 },
-  metaText: { color: colors.textSecondary, fontSize: 12, flexShrink: 1 },
+  thumbPlaceholder: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#1A1815',
+  },
+  body: {
+    flex: 1,
+    gap: 5,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  kindLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  meta: {
+    color: colors.textMuted,
+    fontSize: 11.5,
+  },
 });

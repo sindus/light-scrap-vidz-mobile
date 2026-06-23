@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { GlassCard } from './GlassCard';
 import { colors, radius } from '@/theme';
@@ -13,7 +13,7 @@ interface ProgressCardProps {
 export function ProgressCard({ status, progress, error }: ProgressCardProps) {
   if (status === 'idle') return null;
 
-  const percent = progress?.percent ?? 0;
+  const percent = Math.max(0, Math.min(100, progress?.percent ?? 0));
   const busy = status === 'downloading' || status === 'saving';
 
   return (
@@ -25,34 +25,35 @@ export function ProgressCard({ status, progress, error }: ProgressCardProps) {
               Video {progress.current_item} / {progress.total_items}
             </Text>
           )}
-          <View style={styles.headRow}>
-            <View style={styles.headLeft}>
-              <ActivityIndicator size="small" color={colors.accent} />
-              <Text style={styles.filename} numberOfLines={1}>
-                {status === 'saving'
-                  ? 'Saving to device…'
-                  : progress?.filename || 'Starting download…'}
-              </Text>
+
+          <View style={styles.progressHeader}>
+            <View style={styles.percentRow}>
+              <Text style={styles.percentBig}>{Math.floor(percent)}</Text>
+              <Text style={styles.percentSign}>%</Text>
             </View>
-            {status === 'downloading' && <Text style={styles.percent}>{percent.toFixed(1)}%</Text>}
+            {status === 'downloading' && progress && (
+              <View style={styles.statsCol}>
+                {!!progress.speed && progress.speed !== 'Unknown B/s' && (
+                  <Text style={styles.speed}>{progress.speed}</Text>
+                )}
+                {!!progress.eta && progress.eta !== 'Unknown' && (
+                  <Text style={styles.eta}>ETA {progress.eta}</Text>
+                )}
+              </View>
+            )}
           </View>
 
           {status === 'downloading' && (
             <View style={styles.track}>
-              <View style={[styles.fill, { width: `${Math.max(0, Math.min(100, percent))}%` }]} />
+              <View style={[styles.fill, { width: `${percent}%` }]} />
             </View>
           )}
 
-          {status === 'downloading' && !!progress && (
-            <View style={styles.statsRow}>
-              {progress.speed && progress.speed !== 'Unknown B/s' && (
-                <Text style={styles.stat}>{progress.speed}</Text>
-              )}
-              {progress.eta && progress.eta !== 'Unknown' && (
-                <Text style={styles.stat}>ETA {progress.eta}</Text>
-              )}
-            </View>
-          )}
+          {progress?.filename ? (
+            <Text style={styles.filename} numberOfLines={1}>
+              {status === 'saving' ? 'Saving to device…' : progress.filename}
+            </Text>
+          ) : null}
         </>
       )}
 
@@ -85,16 +86,49 @@ export function ProgressCard({ status, progress, error }: ProgressCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { gap: 10 },
+  card: { gap: 12 },
   itemCount: { color: colors.accent, fontSize: 12, fontWeight: '600' },
-  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8 },
-  filename: { color: colors.textSecondary, fontSize: 12, flex: 1 },
-  percent: { color: colors.accent, fontSize: 13, fontWeight: '600' },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  percentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  percentBig: {
+    color: colors.textPrimary,
+    fontSize: 40,
+    fontWeight: '700',
+    lineHeight: 44,
+    letterSpacing: -1,
+  },
+  percentSign: {
+    color: colors.textFaint,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 26,
+    marginBottom: 4,
+  },
+  statsCol: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  speed: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  eta: {
+    color: colors.textFaint,
+    fontSize: 11,
+  },
   track: {
-    height: 6,
+    height: 8,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#26241F',
     overflow: 'hidden',
   },
   fill: {
@@ -102,8 +136,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.accent,
   },
-  statsRow: { flexDirection: 'row', gap: 16 },
-  stat: { color: colors.textMuted, fontSize: 12 },
+  filename: {
+    color: colors.textFaint,
+    fontSize: 11.5,
+  },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   statusText: { fontSize: 14, fontWeight: '500', flex: 1 },
 });
