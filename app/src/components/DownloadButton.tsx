@@ -9,6 +9,7 @@ interface DownloadButtonProps {
   audioOnly: boolean;
   isPlaylist?: boolean;
   playlistCount?: number | null;
+  selectedCount?: number;
   onDownload: () => void;
   onCancel: () => void;
   onReset: () => void;
@@ -20,6 +21,7 @@ export function DownloadButton({
   audioOnly,
   isPlaylist,
   playlistCount,
+  selectedCount,
   onDownload,
   onCancel,
   onReset,
@@ -54,7 +56,9 @@ export function DownloadButton({
   }
 
   let label: string;
-  if (isPlaylist && playlistCount) {
+  if (isPlaylist && selectedCount && selectedCount > 0) {
+    label = audioOnly ? `Extract ${selectedCount} selected` : `Download ${selectedCount} selected`;
+  } else if (isPlaylist && playlistCount) {
     label = audioOnly ? `Extract ${playlistCount} MP3s` : `Download ${playlistCount} videos`;
   } else {
     label = audioOnly ? 'Extract MP3' : 'Download MP4';

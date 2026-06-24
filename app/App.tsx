@@ -41,6 +41,7 @@ function AppInner() {
   const [urlKind, setUrlKind] = useState<UrlKind>('single');
   const [playlistEnd, setPlaylistEnd] = useState(10);
   const [audioOnly, setAudioOnly] = useState(false);
+  const [selectedPlaylistUrls, setSelectedPlaylistUrls] = useState<string[]>([]);
   const [tab, setTab] = useState<'recent' | 'queue'>('recent');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [serverUrl, setServerUrlState] = useState<string | null>(null);
@@ -95,6 +96,7 @@ function AppInner() {
   const handleFetchInfo = useCallback(
     async (submittedUrl: string) => {
       setUrl(submittedUrl);
+      setSelectedPlaylistUrls([]);
       resetDownload();
       resetInfo();
       resetPlInfo();
@@ -110,12 +112,36 @@ function AppInner() {
   );
 
   const handleDownload = useCallback(() => {
+    if (urlKind === 'playlist' && selectedPlaylistUrls.length > 0) {
+      // Queue each selected entry as an individual download
+      addToQueue(
+        selectedPlaylistUrls.map((u) => ({
+          url: u,
+          quality,
+          audioOnly,
+          playlistEnd: null,
+        })),
+      );
+      setTab('queue');
+      return;
+    }
     if (urlKind === 'playlist' && plInfo) {
       void download({ url, quality, info: null, playlistInfo: plInfo, playlistEnd, audioOnly });
     } else if (info) {
       void download({ url, quality, info, playlistInfo: null, playlistEnd: null, audioOnly });
     }
-  }, [info, plInfo, url, quality, urlKind, playlistEnd, audioOnly, download]);
+  }, [
+    info,
+    plInfo,
+    url,
+    quality,
+    urlKind,
+    playlistEnd,
+    audioOnly,
+    selectedPlaylistUrls,
+    download,
+    addToQueue,
+  ]);
 
   const handleAddToQueue = useCallback(
     (urls: string[]) => {
@@ -135,6 +161,7 @@ function AppInner() {
   const handleReset = useCallback(() => {
     setUrl('');
     setUrlKind('single');
+    setSelectedPlaylistUrls([]);
     resetInfo();
     resetPlInfo();
     resetDownload();
@@ -163,9 +190,25 @@ function AppInner() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.logoWrap}>
-              <Feather name="download" size={12} color={colors.accentInk} />
-            </View>
+            {showContent || isActive ? (
+              <TouchableOpacity
+                onPress={handleReset}
+                disabled={isBusy}
+                hitSlop={10}
+                activeOpacity={0.7}
+                style={styles.backBtn}
+              >
+                <Feather
+                  name="arrow-left"
+                  size={16}
+                  color={isBusy ? colors.textFaint : colors.textSecondary}
+                />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.logoWrap}>
+                <Feather name="download" size={12} color={colors.accentInk} />
+              </View>
+            )}
             <Text style={styles.appTitle}>light-scrap-vidZ</Text>
             <TouchableOpacity
               style={styles.settingsBtn}
@@ -184,10 +227,7 @@ function AppInner() {
           >
             {/* Server banner */}
             {needsServer && (
-              <TouchableOpacity
-                onPress={() => setSettingsOpen(true)}
-                activeOpacity={0.85}
-              >
+              <TouchableOpacity onPress={() => setSettingsOpen(true)} activeOpacity={0.85}>
                 <View style={styles.banner}>
                   <Feather name="alert-triangle" size={15} color={colors.accent} />
                   <Text style={styles.bannerText}>
@@ -213,7 +253,15 @@ function AppInner() {
             {showContent && (
               <View style={styles.section}>
                 {urlKind === 'single' && info && <VideoPreview info={info} url={url} />}
-                {urlKind === 'playlist' && plInfo && <PlaylistPreview info={plInfo} url={url} />}
+                {urlKind === 'playlist' && plInfo && (
+                  <PlaylistPreview
+                    info={plInfo}
+                    url={url}
+                    selectedUrls={selectedPlaylistUrls}
+                    onSelectionChange={setSelectedPlaylistUrls}
+                    disabled={isBusy || isActive}
+                  />
+                )}
 
                 <GlassCard style={styles.optionsCard}>
                   <FormatSelector
@@ -223,7 +271,7 @@ function AppInner() {
                     onQualityChange={setQuality}
                     disabled={isBusy || isActive}
                   />
-                  {urlKind === 'playlist' && (
+                  {urlKind === 'playlist' && selectedPlaylistUrls.length === 0 && (
                     <>
                       <View style={styles.sep} />
                       <PlaylistEndSelector
@@ -242,7 +290,8 @@ function AppInner() {
                   disabled={needsServer || isBusy}
                   audioOnly={audioOnly}
                   isPlaylist={urlKind === 'playlist'}
-                  playlistCount={plInfo?.playlist_count}
+                  playlistCount={plInfo?.playlist_count ?? plInfo?.entries?.length}
+                  selectedCount={selectedPlaylistUrls.length}
                   onDownload={handleDownload}
                   onCancel={cancel}
                   onReset={handleReset}
@@ -292,7 +341,11 @@ function AppInner() {
             {/* Tab content */}
             <GlassCard>
               {tab === 'recent' ? (
-                <HistoryList entries={entries} onClear={clearHistory} />
+                <HistoryList
+                  entries={entries}
+                  onClear={clearHistory}
+                  onSelect={handleFetchInfo}
+                />
               ) : (
                 <QueuePanel
                   items={queueItems}
@@ -344,6 +397,12 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 7,
     backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBtn: {
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },

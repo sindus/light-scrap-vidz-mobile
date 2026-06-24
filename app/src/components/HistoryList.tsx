@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Badge } from './Badge';
 import { PLATFORM_META } from '@/lib/platform';
@@ -8,6 +9,7 @@ import type { HistoryEntry } from '@/types';
 interface HistoryListProps {
   entries: HistoryEntry[];
   onClear: () => void;
+  onSelect: (url: string) => void;
 }
 
 function timeAgo(ts: number): string {
@@ -20,7 +22,16 @@ function timeAgo(ts: number): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function HistoryList({ entries, onClear }: HistoryListProps) {
+export function HistoryList({ entries, onClear, onSelect }: HistoryListProps) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const handleSelect = (entry: HistoryEntry) => {
+    setPendingId(entry.id);
+    onSelect(entry.url);
+    // Clear pending state after a short delay (fetch will update the UI)
+    setTimeout(() => setPendingId(null), 3000);
+  };
+
   if (entries.length === 0) {
     return (
       <View style={styles.empty}>
@@ -40,10 +51,20 @@ export function HistoryList({ entries, onClear }: HistoryListProps) {
       </View>
       {entries.map((e) => {
         const meta = PLATFORM_META[e.platform];
+        const isPending = pendingId === e.id;
         return (
-          <View key={e.id} style={styles.item}>
+          <TouchableOpacity
+            key={e.id}
+            style={[styles.item, isPending && styles.itemPending]}
+            onPress={() => handleSelect(e)}
+            activeOpacity={0.75}
+          >
             <View style={styles.thumb}>
-              {e.thumbnail ? (
+              {isPending ? (
+                <View style={[styles.thumbImg, styles.thumbLoading]}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                </View>
+              ) : e.thumbnail ? (
                 <Image source={{ uri: e.thumbnail }} style={styles.thumbImg} resizeMode="cover" />
               ) : (
                 <View style={styles.thumbPlaceholder} />
@@ -51,14 +72,19 @@ export function HistoryList({ entries, onClear }: HistoryListProps) {
             </View>
             <View style={styles.body}>
               <Text style={styles.title} numberOfLines={1}>
-                {e.title}
+                {isPending ? 'Fetching info…' : e.title}
               </Text>
               <View style={styles.metaRow}>
                 <Badge {...meta} />
                 <Text style={styles.time}>{timeAgo(e.downloaded_at)}</Text>
               </View>
             </View>
-          </View>
+            <Feather
+              name="rotate-ccw"
+              size={13}
+              color={isPending ? colors.accent : colors.textVeryFaint}
+            />
+          </TouchableOpacity>
         );
       })}
     </View>
@@ -93,6 +119,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
+  itemPending: {
+    borderColor: 'rgba(201,242,94,0.20)',
+  },
   thumb: {
     width: 60,
     height: 38,
@@ -104,6 +133,11 @@ const styles = StyleSheet.create({
   thumbImg: {
     width: '100%',
     height: '100%',
+  },
+  thumbLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#211F1A',
   },
   thumbPlaceholder: {
     flex: 1,
